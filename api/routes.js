@@ -1,13 +1,8 @@
 const express = require('express');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-
-// Import our configurations
-const db = require('../config/firebase'); // Firestore database reference
-const transporter = require('../config/nodemailer'); // Nodemailer transporter
+const db = require('../config/firebase');
 
 const router = express.Router();
-
-// ... (The /translate and /chat endpoints remain unchanged) ...
 
 // ============================================================================
 //  TRANSLATE ENDPOINT (/api/translate)
@@ -83,11 +78,11 @@ router.post('/chat', async (req, res) => {
 --- CONVERSATION HISTORY ---
 ${currentConversation}
 Coach:`;
-
+        
         const result = await model.generateContent(fullPrompt);
         const response = await result.response;
         const text = response.text();
-
+        
         res.status(200).json({ response: text });
 
     } catch(error) {
@@ -97,41 +92,27 @@ Coach:`;
 });
 
 // ============================================================================
-//  CONTACT ENDPOINT (/api/contact)
+//  CONTACT SAVE ENDPOINT (/api/contact-save)
 // ============================================================================
-router.post('/contact', async (req, res) => {
-    try {
-        const { name, email, subject, message } = req.body;
-
-        if (!name || !email || !subject || !message) {
-            return res.status(400).json({ error: 'All fields are required.' });
-        }
-
-        const newSubmission = {
-            name,
-            email,
-            subject,
-            message,
-            submittedAt: new Date().toISOString(),
-        };
-
-        await db.collection('contacts').add(newSubmission);
-
-        const mailOptions = {
-            from: `"Neurotype Communicator" <${process.env.SENDER_EMAIL}>`,
-            to: process.env.RECIPIENT_EMAIL,
-            subject: `New Contact Form Submission: ${subject}`,
-            html: `<h3>You have a new contact form submission...</h3>`,
-        };
-
-        await transporter.sendMail(mailOptions);
-
-        res.status(200).json({ message: 'Submission received successfully.' });
-
-    } catch (error) {
-        console.error('Error in /contact endpoint:', error);
-        res.status(500).json({ error: 'An error occurred while processing your request.' });
+router.post('/contact-save', async (req, res) => {
+  try {
+    const { name, email, subject, message } = req.body;
+    if (!name || !email || !subject || !message) {
+      return res.status(400).json({ error: 'All fields are required to save.' });
     }
+    const newSubmission = {
+      name,
+      email,
+      subject,
+      message,
+      submittedAt: new Date().toISOString(),
+    };
+    await db.collection('contacts').add(newSubmission);
+    res.status(200).json({ message: 'Submission saved successfully.' });
+  } catch (error) {
+    console.error('Error in /contact-save endpoint:', error);
+    res.status(500).json({ error: 'Failed to save contact submission.' });
+  }
 });
 
 // ============================================================================
@@ -141,7 +122,6 @@ router.post('/feedback', async (req, res) => {
   try {
     const { responseRating, responseComment, explanationRating, explanationComment, mode } = req.body;
 
-    // Basic validation
     if (!responseRating && !explanationRating) {
       return res.status(400).json({ error: 'At least one rating is required.' });
     }
@@ -155,9 +135,8 @@ router.post('/feedback', async (req, res) => {
       submittedAt: new Date().toISOString(),
     };
 
-    // Save the feedback to the Firestore 'feedback' collection
     await db.collection('feedback').add(newFeedback);
-
+    
     res.status(201).json({ message: 'Feedback submitted successfully.' });
 
   } catch (error) {
