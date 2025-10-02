@@ -1,18 +1,14 @@
 const nodemailer = require('nodemailer');
 
-// Create a transporter object using OAuth 2.0
+// Create a transporter object using Brevo's SMTP details
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  host: 'smtp-relay.brevo.com',
+  port: 587,
+  secure: false, // Use 'false' for port 587
   auth: {
-    type: 'OAuth2',
-    user: process.env.SENDER_EMAIL,
-    clientId: process.env.OAUTH_CLIENT_ID,
-    clientSecret: process.env.OAUTH_CLIENT_SECRET,
-    refreshToken: process.env.OAUTH_REFRESH_TOKEN,
+    user: process.env.BREVO_USER, // Your Brevo account email
+    pass: process.env.BREVO_API_KEY, // The API key you just generated
   },
 });
 
-// Export the transporter object
 module.exports = transporter;
