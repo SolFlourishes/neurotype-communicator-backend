@@ -1,8 +1,38 @@
 const express = require('express');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('@google-generative-ai');
 const db = require('../config/firebase');
 
 const router = express.Router();
+
+// ============================================================================
+//  NEW - CLASSIFY STYLE ENDPOINT (/api/classify-style)
+// ============================================================================
+router.post('/classify-style', async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ error: 'Text is required for classification.' });
+    }
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro-latest' });
+
+    const prompt = `Your task is to analyze the user's writing style from the provided text. Classify it as either "direct" or "indirect". "Direct" style is literal, fact-based, and unambiguous. "Indirect" style uses nuance, social context, and subtext. Respond with only one word: either "direct" or "indirect".
+USER'S TEXT: "${text}"`;
+
+    const result = await model.generateContent(prompt);
+    const classification = (await result.response.text()).trim().toLowerCase();
+
+    if (classification === 'direct' || classification === 'indirect') {
+      res.status(200).json({ style: classification });
+    } else {
+      res.status(200).json({ style: 'direct' }); // Default to 'direct' on unexpected AI response
+    }
+  } catch (error) {
+    console.error('Error in /classify-style endpoint:', error);
+    res.status(500).json({ error: 'An error occurred during style classification.' });
+  }
+});
 
 // ============================================================================
 //  TRANSLATE ENDPOINT (/api/translate)
@@ -92,11 +122,10 @@ Coach:`;
 });
 
 // ============================================================================
-//  CONTACT SAVE ENDPOINT (/api/contact-save) - UPDATED
+//  CONTACT SAVE ENDPOINT (/api/contact-save)
 // ============================================================================
 router.post('/contact-save', async (req, res) => {
   try {
-    // Now accepting 'version' from the request body
     const { name, email, subject, message, version } = req.body;
     if (!name || !email || !subject || !message) {
       return res.status(400).json({ error: 'All fields are required to save.' });
@@ -106,7 +135,7 @@ router.post('/contact-save', async (req, res) => {
       email,
       subject,
       message,
-      appVersion: version || 'unknown', // Add version to the saved data
+      appVersion: version || 'unknown',
       submittedAt: new Date().toISOString(),
     };
     await db.collection('contacts').add(newSubmission);
@@ -118,11 +147,10 @@ router.post('/contact-save', async (req, res) => {
 });
 
 // ============================================================================
-//  FEEDBACK ENDPOINT (/api/feedback) - UPDATED
+//  FEEDBACK ENDPOINT (/api/feedback)
 // ============================================================================
 router.post('/feedback', async (req, res) => {
   try {
-    // Now accepting 'version' from the request body
     const { responseRating, responseComment, explanationRating, explanationComment, mode, version } = req.body;
 
     if (!responseRating && !explanationRating) {
@@ -135,7 +163,7 @@ router.post('/feedback', async (req, res) => {
       explanationRating: explanationRating || null,
       explanationComment: explanationComment || null,
       mode: mode || null,
-      appVersion: version || 'unknown', // Add version to the saved data
+      appVersion: version || 'unknown',
       submittedAt: new Date().toISOString(),
     };
 
