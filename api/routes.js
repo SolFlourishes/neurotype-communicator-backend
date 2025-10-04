@@ -92,11 +92,12 @@ Coach:`;
 });
 
 // ============================================================================
-//  CONTACT SAVE ENDPOINT (/api/contact-save)
+//  CONTACT SAVE ENDPOINT (/api/contact-save) - UPDATED
 // ============================================================================
 router.post('/contact-save', async (req, res) => {
   try {
-    const { name, email, subject, message } = req.body;
+    // Now accepting 'version' from the request body
+    const { name, email, subject, message, version } = req.body;
     if (!name || !email || !subject || !message) {
       return res.status(400).json({ error: 'All fields are required to save.' });
     }
@@ -105,10 +106,11 @@ router.post('/contact-save', async (req, res) => {
       email,
       subject,
       message,
+      appVersion: version || 'unknown', // Add version to the saved data
       submittedAt: new Date().toISOString(),
     };
     await db.collection('contacts').add(newSubmission);
-    res.status(200).json({ message: 'Submission saved successfully.' });
+    res.status(200).json({ message: 'Saved successfully.' });
   } catch (error) {
     console.error('Error in /contact-save endpoint:', error);
     res.status(500).json({ error: 'Failed to save contact submission.' });
@@ -116,11 +118,12 @@ router.post('/contact-save', async (req, res) => {
 });
 
 // ============================================================================
-//  FEEDBACK ENDPOINT (/api/feedback)
+//  FEEDBACK ENDPOINT (/api/feedback) - UPDATED
 // ============================================================================
 router.post('/feedback', async (req, res) => {
   try {
-    const { responseRating, responseComment, explanationRating, explanationComment, mode } = req.body;
+    // Now accepting 'version' from the request body
+    const { responseRating, responseComment, explanationRating, explanationComment, mode, version } = req.body;
 
     if (!responseRating && !explanationRating) {
       return res.status(400).json({ error: 'At least one rating is required.' });
@@ -132,6 +135,7 @@ router.post('/feedback', async (req, res) => {
       explanationRating: explanationRating || null,
       explanationComment: explanationComment || null,
       mode: mode || null,
+      appVersion: version || 'unknown', // Add version to the saved data
       submittedAt: new Date().toISOString(),
     };
 
